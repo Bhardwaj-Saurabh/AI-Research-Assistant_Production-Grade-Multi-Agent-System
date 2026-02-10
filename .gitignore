@@ -38,7 +38,6 @@ credentials.json
 logs/
 
 # Generated reports and artifacts
-research_report.md
 *.md.backup
 
 # Testing
