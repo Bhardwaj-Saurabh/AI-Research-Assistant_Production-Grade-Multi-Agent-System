@@ -18,7 +18,7 @@ async def main():
     print(f"   Model: {config.model_name}")
 
     # Initialize genai client
-    print(f"\n🔧 Initializing genai.Client...")
+    print(f"\n[*] Initializing genai.Client...")
 
     # Try multiple authentication methods (easiest to hardest for students)
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
@@ -28,7 +28,7 @@ async def main():
             # Method 1: API Key (EASIEST for students!)
             print(f"   Using Gemini API key authentication...")
             client = genai.Client(api_key=api_key)
-            print(f"   ✓ Client initialized with API key")
+            print(f"   [OK] Client initialized with API key")
         elif config.project_id:
             # Method 2: Vertex AI (requires gcloud or service account)
             print(f"   Using Vertex AI authentication...")
@@ -37,12 +37,12 @@ async def main():
                 project=config.project_id,
                 location=config.location
             )
-            print(f"   ✓ Client initialized with Vertex AI")
+            print(f"   [OK] Client initialized with Vertex AI")
         else:
-            print("\n❌ No authentication method available")
+            print("\n[ERROR] No authentication method available")
             return
     except Exception as e:
-        print(f"\n❌ Failed to initialize client: {e}")
+        print(f"\n[ERROR] Failed to initialize client: {e}")
         return
 
     # Sample research queries
@@ -53,12 +53,12 @@ async def main():
         "What are the latest types of computer memory?"
     ]
 
-    print(f"\n📝 Sample Research Queries:")
+    print(f"\n[*] Sample Research Queries:")
     for i, q in enumerate(queries, 1):
         print(f"   {i}. {q}")
 
     # Allow user to select query or provide custom one
-    print(f"\n💡 To research a different topic:")
+    print(f"\n[*] To research a different topic:")
     print(f"   • Edit queries list in main.py")
     print(f"   • Or set RESEARCH_QUERY environment variable")
     print(f"   • Example: export RESEARCH_QUERY='Your custom question here'")
@@ -68,11 +68,11 @@ async def main():
 
     if custom_query:
         selected_query = custom_query
-        print(f"\n🎯 Running custom research query...")
+        print(f"\n[*] Running custom research query...")
     else:
         # Select query (default to first one)
         selected_query = queries[0]
-        print(f"\n🎯 Running research workflow for query 1...")
+        print(f"\n[*] Running research workflow for query 1...")
 
     # Execute complete workflow
     try:
@@ -84,15 +84,15 @@ async def main():
         )
 
         # Generate formatted report
-        print(f"\n📄 Generating research report...")
+        print(f"\n[*] Generating research report...")
         report = generate_research_report(workflow_results)
 
         # Save report
         report_file = os.path.join(os.path.dirname(__file__), "research_report.md")
-        with open(report_file, 'w') as f:
+        with open(report_file, 'w', encoding='utf-8') as f:
             f.write(report)
 
-        print(f"   ✓ Report saved to: {report_file}")
+        print(f"   [OK] Report saved to: {report_file}")
 
         # Display report preview
         print("\n" + "="*80)
@@ -117,7 +117,7 @@ async def main():
         print(f"\n Execution successful!")
        
     except Exception as e:
-        print(f"\n❌ Error executing workflow: {e}")
+        print(f"\n[ERROR] Error executing workflow: {e}")
         import traceback
         traceback.print_exc()
 
