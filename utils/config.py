@@ -4,6 +4,7 @@ This module handles environment configuration and settings.
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -22,6 +23,28 @@ class Config:
 
         # Service Account Authentication
         self.google_application_credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "service-account-key.json")
+
+        # Set environment variables that ADK expects for Vertex AI
+        # ADK's internal clients need these to authenticate properly
+        if self.project_id:
+            os.environ["GOOGLE_CLOUD_PROJECT"] = self.project_id
+            os.environ["VERTEXAI_PROJECT"] = self.project_id
+        if self.location:
+            os.environ["GOOGLE_CLOUD_LOCATION"] = self.location
+            os.environ["VERTEXAI_LOCATION"] = self.location
+
+        # Tell genai client to use Vertex AI backend
+        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "true"
+
+        # Ensure GOOGLE_APPLICATION_CREDENTIALS is an absolute path
+        if self.google_application_credentials:
+            cred_path = Path(self.google_application_credentials)
+            if not cred_path.is_absolute():
+                # Make it absolute relative to project root
+                project_root = Path(__file__).parent.parent
+                cred_path = project_root / self.google_application_credentials
+            if cred_path.exists():
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(cred_path)
 
         # Application Settings
         self.debug = os.getenv("DEBUG", "false").lower() == "true"

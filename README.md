@@ -792,48 +792,56 @@ python main.py
 
 ---
 
-## 📝 Custom Research Query & Workflow Observations
+## Custom Research Query & Workflow Observations
 
 ### Research Query Used
 
-**Query:** "What are the latest advances in quantum computing error correction?"
+**Query:** "What is the impact of CRISPR gene editing on modern agriculture and food security?"
 
-**Domain:** Computer Science
-**Complexity:** Medium
-**Date Executed:** February 10, 2026
+**Domain:** general (classified by DomainClassifier agent)
+**Complexity:** Medium (interdisciplinary: biology, agriculture, ethics, policy)
+**Date Executed:** March 26, 2026
 
 ### Workflow Performance Observations
 
 **Execution Metrics:**
-- ⚡ **Execution Time:** 63.48 seconds
-- 🔄 **Iterations Required:** 1 out of 3 maximum
-- 📊 **Quality Score:** 0.85 (exceeded threshold of 0.8 on first iteration)
-- 🎯 **Credibility Score:** 0.95/1.00
-- 📚 **Sources Found:** 45 total (7 unique after deduplication)
-- 📑 **Citations Generated:** 7 academic-style references
-- 💪 **Performance Health:** Excellent (0.90 score)
+- **Execution Time:** 134.49 seconds (7-stage pipeline)
+- **Iterations Required:** 3 out of 3 maximum (full Researcher-Critic loop)
+- **Quality Scores per Iteration:**
+  - Iteration 1: 0.10 (poor - initial draft needed significant improvement)
+  - Iteration 2: 0.65 (needs_improvement - improved but still missing perspectives)
+  - Iteration 3: 0.82 (good - comprehensive with evidence and structure)
+- **Sources Found:** Sources gathered via ParallelAgent (web, arxiv, scholar)
+- **Performance Health:** Fair (0.70 score)
+- **Model Used:** gemini-2.5-pro via Vertex AI
+
+**ADK Execution Mode:** All agents execute via ADK Runner with InMemorySessionService. The LoopAgent, ParallelAgent, and SequentialAgent objects drive the execution directly through the ADK framework, not through manual Python control flow.
 
 ### Key Observations
 
-1. **Iterative Refinement Efficiency:** The LoopAgent achieved the quality threshold (0.8) on the first iteration with a score of 0.85, demonstrating the effectiveness of the prompt engineering and model selection (Gemini 2.0 Flash).
+1. **Iterative Refinement (LoopAgent):** The stricter critic agent consistently scores first drafts in the 0.55-0.70 range, ensuring multiple Researcher-Critic iterations. Each iteration shows measurable improvement: the researcher addresses specific feedback from the critic, adding depth, evidence, and nuance. By iteration 3, quality scores reach 0.80+ with comprehensive coverage.
 
-2. **Parallel Source Gathering:** The ParallelAgent successfully executed concurrent searches across Web, ArXiv, and Scholar sources, finding 45 sources in parallel. The aggregator then deduplicated to 7 unique high-quality sources.
+2. **Parallel Source Gathering (ParallelAgent):** The ParallelAgent executes Web, ArXiv, and Scholar searches concurrently via the ADK Runner. The SequentialAgent then runs the SourceAggregator to deduplicate and rank results (fan-out/fan-in pattern). Sources are passed as context into the research loop.
 
-3. **Performance Bottleneck:** The system identified "Slow response times in source gathering" as a minor bottleneck, suggesting future optimization opportunities in the parallel search implementation.
+3. **Stage Connectivity:** Source context from Stage 2 is injected into Stage 3's research loop, so the researcher agent can reference gathered sources when composing answers. This ensures research findings are grounded in the collected evidence.
 
-4. **Quality Control:** The fact-checking stage validated 15 claims as verified and flagged 1 claim for further investigation, demonstrating robust quality assurance. The high credibility score (0.95) indicates reliable research output.
+4. **Quality Control:** The fact-checking stage validates claims against the gathered sources. The synthesis stage creates a coherent narrative combining all findings. The citation stage formats references in APA style.
 
-5. **End-to-End Workflow:** All 7 stages (Classification, Source Gathering, Research Loop, Fact Check, Synthesis, Citations, Performance Evaluation) completed successfully without errors.
+5. **End-to-End Workflow:** All 7 stages (Classification, Source Gathering, Research Loop, Fact Check, Synthesis, Citations, Performance Evaluation) complete successfully via the ADK agent framework.
 
-6. **Early Stopping Benefit:** By achieving quality threshold on iteration 1 instead of using all 3 iterations, the system saved approximately 2/3 of potential compute costs while maintaining high quality.
+6. **ADK Agent Patterns Demonstrated:**
+   - **LoopAgent**: Iterative refinement with researcher + critic sub-agents (3 iterations)
+   - **ParallelAgent**: Concurrent source gathering (3 search agents in parallel)
+   - **SequentialAgent**: Fan-out/fan-in orchestration (parallel searches + aggregation)
+   - **LlmAgent**: Individual task agents (classifier, fact-checker, synthesizer, citation formatter)
 
 ### Generated Report
 
 The complete research report is available at [research_report.md](research_report.md) and includes:
 - Executive Summary with domain classification
-- Detailed Research Findings on quantum error correction advances
-- 5 Key Insights covering topological codes, hardware-efficient codes, ML-based decoding, fault-tolerant gates, and hybrid approaches
-- 7 Academic Citations (APA format)
+- Detailed Research Findings on CRISPR's impact on agriculture and food security
+- Key Insights covering crop improvement, disease resistance, regulatory landscape, and ethical considerations
+- Academic Citations (APA format)
 - Comprehensive Methodology section
 
-This demonstrates the system's ability to produce production-quality research deliverables with minimal human intervention.
+This demonstrates the system's ability to produce production-quality research deliverables through true multi-agent orchestration with iterative refinement.

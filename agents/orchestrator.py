@@ -90,9 +90,21 @@ async def execute_research_workflow(
     print("STAGE 3: Research Refinement")
     print("-"*80)
 
+    # Build source context from Stage 2 to feed into the research loop
+    source_context = ""
+    top_sources = sources.get('aggregated_sources', {}).get('top_sources', [])
+    if top_sources:
+        source_context = "Gathered sources:\n"
+        for i, src in enumerate(top_sources[:10], 1):
+            title = src.get('title', 'Unknown')
+            snippet = src.get('snippet', src.get('abstract', ''))
+            src_type = src.get('type', src.get('source_type', 'unknown'))
+            source_context += f"{i}. [{src_type}] {title}: {snippet}\n"
+
     research = await execute_research_loop(
         client=client,
         query=query,
+        source_context=source_context,
         max_iterations=max_iterations,
         model=model
     )
