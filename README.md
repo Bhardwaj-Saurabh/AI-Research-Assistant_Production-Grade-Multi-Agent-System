@@ -798,28 +798,30 @@ python main.py
 
 **Query:** "What is the impact of CRISPR gene editing on modern agriculture and food security?"
 
-**Domain:** general (classified by DomainClassifier agent)
-**Complexity:** Medium (interdisciplinary: biology, agriculture, ethics, policy)
-**Date Executed:** March 26, 2026
+**Domain:** biology (classified by DomainClassifier agent with 0.98 confidence)
+**Complexity:** High (interdisciplinary: biology, agriculture, ethics, policy)
+**Date Executed:** March 27, 2026
 
 ### Workflow Performance Observations
 
 **Execution Metrics:**
-- **Execution Time:** 134.49 seconds (7-stage pipeline)
-- **Iterations Required:** 3 out of 3 maximum (full Researcher-Critic loop)
+- **Execution Time:** ~245 seconds (7-stage pipeline)
+- **Iterations Required:** 2 out of 3 maximum (quality threshold met early)
 - **Quality Scores per Iteration:**
-  - Iteration 1: 0.10 (poor - initial draft needed significant improvement)
-  - Iteration 2: 0.65 (needs_improvement - improved but still missing perspectives)
-  - Iteration 3: 0.82 (good - comprehensive with evidence and structure)
-- **Sources Found:** Sources gathered via ParallelAgent (web, arxiv, scholar)
-- **Performance Health:** Fair (0.70 score)
+  - Iteration 1: 0.65 (needs_improvement - solid overview but lacking depth)
+  - Iteration 2: 0.85 (good - comprehensive with evidence and structure)
+- **Sources Found:** 21 total (8 web, 6 arxiv, 7 scholar)
+- **Credibility Score:** 0.90/1.00
+- **Coherence Score:** 0.90/1.00
+- **Citations Generated:** 10 (APA format)
+- **Performance Health:** Excellent (0.90 score)
 - **Model Used:** gemini-2.5-pro via Vertex AI
 
 **ADK Execution Mode:** All agents execute via ADK Runner with InMemorySessionService. The LoopAgent, ParallelAgent, and SequentialAgent objects drive the execution directly through the ADK framework, not through manual Python control flow.
 
 ### Key Observations
 
-1. **Iterative Refinement (LoopAgent):** The stricter critic agent consistently scores first drafts in the 0.55-0.70 range, ensuring multiple Researcher-Critic iterations. Each iteration shows measurable improvement: the researcher addresses specific feedback from the critic, adding depth, evidence, and nuance. By iteration 3, quality scores reach 0.80+ with comprehensive coverage.
+1. **Iterative Refinement (LoopAgent):** The critic agent evaluates initial drafts and provides specific feedback. The researcher addresses each weakness, adding depth, evidence, and nuance. Quality threshold (0.80) was met by iteration 2, demonstrating efficient refinement. The exit_loop tool properly terminates the loop when quality is sufficient.
 
 2. **Parallel Source Gathering (ParallelAgent):** The ParallelAgent executes Web, ArXiv, and Scholar searches concurrently via the ADK Runner. The SequentialAgent then runs the SourceAggregator to deduplicate and rank results (fan-out/fan-in pattern). Sources are passed as context into the research loop.
 
@@ -830,7 +832,7 @@ python main.py
 5. **End-to-End Workflow:** All 7 stages (Classification, Source Gathering, Research Loop, Fact Check, Synthesis, Citations, Performance Evaluation) complete successfully via the ADK agent framework.
 
 6. **ADK Agent Patterns Demonstrated:**
-   - **LoopAgent**: Iterative refinement with researcher + critic sub-agents (3 iterations)
+   - **LoopAgent**: Iterative refinement with researcher + critic sub-agents (2 iterations, quality threshold met)
    - **ParallelAgent**: Concurrent source gathering (3 search agents in parallel)
    - **SequentialAgent**: Fan-out/fan-in orchestration (parallel searches + aggregation)
    - **LlmAgent**: Individual task agents (classifier, fact-checker, synthesizer, citation formatter)
@@ -838,10 +840,12 @@ python main.py
 ### Generated Report
 
 The complete research report is available at [research_report.md](research_report.md) and includes:
-- Executive Summary with domain classification
+- Executive Summary with domain classification (biology, 0.98 confidence)
 - Detailed Research Findings on CRISPR's impact on agriculture and food security
 - Key Insights covering crop improvement, disease resistance, regulatory landscape, and ethical considerations
-- Academic Citations (APA format)
+- Verified Claims (5 fact-checked statements) and Areas for Further Investigation
+- Bibliography with 10 properly formatted APA citations
+- Source Distribution (21 sources: 8 web, 6 arxiv, 7 scholar)
 - Comprehensive Methodology section
 
 This demonstrates the system's ability to produce production-quality research deliverables through true multi-agent orchestration with iterative refinement.
