@@ -1,11 +1,57 @@
 import json
+import re
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google import genai
 from google.genai.types import GenerateContentConfig, Content, Part
+
+
+def parse_json_response(text: str) -> Optional[Dict]:
+    """
+    Robustly parse JSON from LLM response, handling various formats.
+
+    Handles:
+    - Raw JSON
+    - JSON wrapped in markdown code blocks (```json ... ```)
+    - JSON with leading/trailing text
+    """
+    if not text:
+        return None
+
+    # Try direct parsing first
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Remove markdown code blocks
+    clean_text = text
+
+    # Handle ```json ... ``` blocks
+    json_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', clean_text)
+    if json_block_match:
+        clean_text = json_block_match.group(1)
+
+    # Try parsing the cleaned text
+    try:
+        return json.loads(clean_text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Find JSON object in the text
+    try:
+        json_start = clean_text.find('{')
+        json_end = clean_text.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            json_text = clean_text[json_start:json_end]
+            return json.loads(json_text)
+    except json.JSONDecodeError:
+        pass
+
+    return None
 
 
 class WebSearchAgent(LlmAgent):
@@ -20,21 +66,10 @@ Generate 5-10 realistic web search results with:
 - Relevant 2-3 sentence snippets
 - Relevance scores (0-1)
 
-Output format (JSON):
-{
-  "source_type": "web",
-  "results": [
-    {
-      "title": "Descriptive article title",
-      "url": "https://example.com/realistic-url",
-      "snippet": "2-3 sentence preview that's relevant to the query",
-      "relevance": 0.95,
-      "source": "website name"
-    }
-  ],
-  "total_found": 10,
-  "search_time": 0.5
-}"""
+IMPORTANT: Output ONLY valid JSON, no markdown formatting, no code blocks, no explanation text.
+
+Output this exact JSON structure:
+{"source_type": "web", "results": [{"title": "Article title", "url": "https://example.com/url", "snippet": "2-3 sentence preview", "relevance": 0.95, "source": "website name"}], "total_found": 10, "search_time": 0.5}"""
 
         # Initialize ADK LlmAgent
         super().__init__(
@@ -43,7 +78,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.8,
-                max_output_tokens=1024,
+                max_output_tokens=4096,
                 response_mime_type="application/json"
             )
         )
@@ -62,22 +97,10 @@ Generate 5-8 realistic arXiv papers with:
 - 3-5 sentence abstracts
 - Publication dates (recent, within last 2-3 years)
 
-Output format (JSON):
-{
-  "source_type": "arxiv",
-  "results": [
-    {
-      "title": "Academic Paper Title: Subtitle",
-      "authors": ["FirstName LastName", "FirstName LastName"],
-      "url": "https://arxiv.org/abs/2401.12345",
-      "abstract": "3-5 sentence academic abstract describing the research",
-      "published": "2024-01-15",
-      "relevance": 0.92
-    }
-  ],
-  "total_found": 8,
-  "search_time": 0.3
-}"""
+IMPORTANT: Output ONLY valid JSON, no markdown formatting, no code blocks, no explanation text.
+
+Output this exact JSON structure:
+{"source_type": "arxiv", "results": [{"title": "Paper Title", "authors": ["Author Name"], "url": "https://arxiv.org/abs/2401.12345", "abstract": "Abstract text", "published": "2024-01-15", "relevance": 0.92}], "total_found": 8, "search_time": 0.3}"""
 
         # Initialize ADK LlmAgent
         super().__init__(
@@ -86,7 +109,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.8,
-                max_output_tokens=1024,
+                max_output_tokens=4096,
                 response_mime_type="application/json"
             )
         )
@@ -105,24 +128,10 @@ Generate 5-8 realistic academic publications with:
 - Years and citation counts
 - Brief descriptions
 
-Output format (JSON):
-{
-  "source_type": "scholar",
-  "results": [
-    {
-      "title": "Academic Publication Title",
-      "authors": ["Author1", "Author2", "Author3"],
-      "venue": "Journal of Computer Science / Conference Name",
-      "year": 2024,
-      "url": "https://scholar.google.com/citations?id=example",
-      "snippet": "2-3 sentence description of the work",
-      "citations": 45,
-      "relevance": 0.88
-    }
-  ],
-  "total_found": 8,
-  "search_time": 0.4
-}"""
+IMPORTANT: Output ONLY valid JSON, no markdown formatting, no code blocks, no explanation text.
+
+Output this exact JSON structure:
+{"source_type": "scholar", "results": [{"title": "Publication Title", "authors": ["Author1", "Author2"], "venue": "Journal Name", "year": 2024, "url": "https://scholar.google.com/citations?id=example", "snippet": "Description", "citations": 45, "relevance": 0.88}], "total_found": 8, "search_time": 0.4}"""
 
         # Initialize ADK LlmAgent
         super().__init__(
@@ -131,7 +140,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.8,
-                max_output_tokens=1024,
+                max_output_tokens=4096,
                 response_mime_type="application/json"
             )
         )
@@ -149,29 +158,12 @@ Your role:
 2. Remove duplicates
 3. Rank by relevance
 4. Provide summary statistics
+5. Select the top 10-15 most relevant sources
 
-Output format (JSON):
-{
-  "total_sources": 30,
-  "unique_sources": 25,
-  "top_sources": [
-    {
-      "title": "Source title",
-      "type": "web/arxiv/scholar",
-      "url": "https://...",
-      "relevance_score": 0.95,
-      "snippet": "Brief description"
-    }
-  ],
-  "sources_by_type": {
-    "web": 10,
-    "arxiv": 8,
-    "scholar": 7
-  },
-  "aggregation_summary": "Brief summary of source quality and diversity"
-}
+IMPORTANT: Output ONLY valid JSON, no markdown formatting, no code blocks, no explanation text.
 
-Select the top 10-15 most relevant sources."""
+Output this exact JSON structure:
+{"total_sources": 30, "unique_sources": 25, "top_sources": [{"title": "Source title", "type": "web", "url": "https://example.com", "relevance_score": 0.95, "snippet": "Brief description"}], "sources_by_type": {"web": 10, "arxiv": 8, "scholar": 7}, "aggregation_summary": "Summary of source quality"}"""
 
         # Initialize ADK LlmAgent
         super().__init__(
@@ -180,7 +172,7 @@ Select the top 10-15 most relevant sources."""
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.3,
-                max_output_tokens=2048,
+                max_output_tokens=8192,
                 response_mime_type="application/json"
             )
         )
@@ -302,33 +294,20 @@ async def execute_source_gathering(
             # Track search agent outputs
             if event.author in ("web_search", "arxiv_search", "scholar_search"):
                 search_agents_seen.add(event.author)
-                try:
-                    # Strip markdown code blocks if present
-                    clean_text = text
-                    if "```json" in clean_text:
-                        clean_text = clean_text.split("```json")[-1]
-                    if "```" in clean_text:
-                        clean_text = clean_text.split("```")[0]
-                    result = json.loads(clean_text.strip())
+                result = parse_json_response(text)
+                if result:
                     search_results.append(result)
                     print(f"      -> {event.author}: Found {result.get('total_found', 0)} sources")
-                except json.JSONDecodeError:
+                else:
+                    # Debug: show what we received
                     print(f"      -> {event.author}: Completed (JSON parse issue)")
+                    print(f"         DEBUG raw output (first 200 chars): {text[:200]}...")
 
             # Track aggregator output
             elif event.author == "source_aggregator":
                 print(f"\n   Stage 2: Aggregator (fan-in)")
                 print(f"      -> {event.author} aggregating results...")
-                try:
-                    # Strip markdown code blocks if present
-                    clean_text = text
-                    if "```json" in clean_text:
-                        clean_text = clean_text.split("```json")[-1]
-                    if "```" in clean_text:
-                        clean_text = clean_text.split("```")[0]
-                    aggregated = json.loads(clean_text.strip())
-                except json.JSONDecodeError:
-                    aggregated = None
+                aggregated = parse_json_response(text)
 
     # If aggregation failed or wasn't reached, build a fallback
     if aggregated is None:

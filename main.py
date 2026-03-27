@@ -59,9 +59,9 @@ async def main():
 
     # Allow user to select query or provide custom one
     print(f"\n[*] To research a different topic:")
-    print(f"   • Edit queries list in main.py")
-    print(f"   • Or set RESEARCH_QUERY environment variable")
-    print(f"   • Example: export RESEARCH_QUERY='Your custom question here'")
+    print(f"   - Edit queries list in main.py")
+    print(f"   - Or set RESEARCH_QUERY environment variable")
+    print(f"   - Example: export RESEARCH_QUERY='Your custom question here'")
 
     # Check for custom query via environment variable
     custom_query = os.getenv("RESEARCH_QUERY")
@@ -107,12 +107,12 @@ async def main():
         print("\n" + "="*80)
         print("EXECUTION SUMMARY")
         print("="*80)
-        print(f"\n  Workflow Metrics:")
-        print(f"   • Total Stages: 6")
-        print(f"   • Research Iterations: {workflow_results['stage_3_research']['iterations_run']}")
-        print(f"   • Sources Found: {workflow_results['stage_2_sources']['aggregated_sources'].get('total_sources', 0)}")
-        print(f"   • Credibility Score: {workflow_results['stage_4_fact_check'].get('credibility_score', 0):.2f}")
-        print(f"   • Citations: {workflow_results['stage_6_citations'].get('total_citations', 0)}")
+        print(f"\n[*] Workflow Metrics:")
+        print(f"   - Total Stages: 6")
+        print(f"   - Research Iterations: {workflow_results['stage_3_research']['iterations_run']}")
+        print(f"   - Sources Found: {workflow_results['stage_2_sources']['aggregated_sources'].get('total_sources', 0)}")
+        print(f"   - Credibility Score: {workflow_results['stage_4_fact_check'].get('credibility_score', 0):.2f}")
+        print(f"   - Citations: {workflow_results['stage_6_citations'].get('total_citations', 0)}")
 
         print(f"\n Execution successful!")
        

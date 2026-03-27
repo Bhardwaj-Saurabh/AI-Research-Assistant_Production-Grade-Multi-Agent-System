@@ -58,7 +58,7 @@ class Config:
 
         # Validate required settings
         if not self.project_id:
-            print("⚠️  Warning: PROJECT_ID not set in environment")
+            print("[!] Warning: PROJECT_ID not set in environment")
 
     def __repr__(self):
         """String representation of config."""

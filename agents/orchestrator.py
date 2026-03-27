@@ -66,10 +66,10 @@ async def execute_research_workflow(
     domain_classifier = DomainClassifierAgent(model=model)
     classification = domain_classifier.classify(client=client, query=query)
 
-    print(f"   ✓ Domain: {classification.get('domain', 'unknown')}")
-    print(f"   ✓ Confidence: {classification.get('confidence', 0):.2f}")
-    print(f"   ✓ Complexity: {classification.get('complexity', 'unknown')}")
-    print(f"   ✓ Recommended sources: {', '.join(classification.get('recommended_sources', []))}")
+    print(f"   [OK] Domain: {classification.get('domain', 'unknown')}")
+    print(f"   [OK] Confidence: {classification.get('confidence', 0):.2f}")
+    print(f"   [OK] Complexity: {classification.get('complexity', 'unknown')}")
+    print(f"   [OK] Recommended sources: {', '.join(classification.get('recommended_sources', []))}")
 
     workflow_results['stage_1_classification'] = classification
 
@@ -124,9 +124,9 @@ async def execute_research_workflow(
         sources=sources
     )
 
-    print(f"   ✓ Credibility Score: {fact_check.get('credibility_score', 0):.2f}")
-    print(f"   ✓ Verified Claims: {len(fact_check.get('verified_claims', []))}")
-    print(f"   ✓ Questionable Claims: {len(fact_check.get('questionable_claims', []))}")
+    print(f"   [OK] Credibility Score: {fact_check.get('credibility_score', 0):.2f}")
+    print(f"   [OK] Verified Claims: {len(fact_check.get('verified_claims', []))}")
+    print(f"   [OK] Questionable Claims: {len(fact_check.get('questionable_claims', []))}")
 
     workflow_results['stage_4_fact_check'] = fact_check
 
@@ -146,10 +146,10 @@ async def execute_research_workflow(
         sources=sources
     )
 
-    print(f"   ✓ Synthesis completed")
-    print(f"   ✓ Key Insights: {len(synthesis.get('key_insights', []))}")
-    print(f"   ✓ Themes: {len(synthesis.get('themes', []))}")
-    print(f"   ✓ Coherence Score: {synthesis.get('coherence_score', 0):.2f}")
+    print(f"   [OK] Synthesis completed")
+    print(f"   [OK] Key Insights: {len(synthesis.get('key_insights', []))}")
+    print(f"   [OK] Themes: {len(synthesis.get('themes', []))}")
+    print(f"   [OK] Coherence Score: {synthesis.get('coherence_score', 0):.2f}")
 
     workflow_results['stage_5_synthesis'] = synthesis
 
@@ -163,9 +163,9 @@ async def execute_research_workflow(
     citation_formatter = CitationAgent(model=model)
     citations = citation_formatter.format_citations(client=client, sources=sources)
 
-    print(f"   ✓ Citations formatted")
-    print(f"   ✓ Total Citations: {citations.get('total_citations', 0)}")
-    print(f"   ✓ Style: {citations.get('citation_style', 'APA')}")
+    print(f"   [OK] Citations formatted")
+    print(f"   [OK] Total Citations: {citations.get('total_citations', 0)}")
+    print(f"   [OK] Style: {citations.get('citation_style', 'APA')}")
 
     workflow_results['stage_6_citations'] = citations
 
@@ -175,19 +175,19 @@ async def execute_research_workflow(
     print("\n" + "="*80)
     print("WORKFLOW COMPLETED")
     print("="*80)
-    print(f"\n. All 7 stages executed successfully")
-    print(f"\n. Results Summary:")
-    print(f"   • Query: {query}")
-    print(f"   • Domain: {classification.get('domain', 'unknown')}")
-    print(f"   • Sources Found: {sources['aggregated_sources'].get('total_sources', 0)}")
-    print(f"   • Research Iterations: {research['iterations_run']}")
-    print(f"   • Credibility Score: {fact_check.get('credibility_score', 0):.2f}")
-    print(f"   • Citations: {citations.get('total_citations', 0)}")
-    print(f"\n  Execution Method:")
-    print(f"   ✓ All agents inherit from ADK base classes")
-    print(f"   ✓ Executed via agent.run_async() with genai.Client")
-    print(f"   ✓ No ADK server deployment required")
-    print(f"   ✓ Real LLM output from Vertex AI Gemini")
+    print(f"\n[*] All 7 stages executed successfully")
+    print(f"\n[*] Results Summary:")
+    print(f"   - Query: {query}")
+    print(f"   - Domain: {classification.get('domain', 'unknown')}")
+    print(f"   - Sources Found: {sources['aggregated_sources'].get('total_sources', 0)}")
+    print(f"   - Research Iterations: {research['iterations_run']}")
+    print(f"   - Credibility Score: {fact_check.get('credibility_score', 0):.2f}")
+    print(f"   - Citations: {citations.get('total_citations', 0)}")
+    print(f"\n[*] Execution Method:")
+    print(f"   [OK] All agents inherit from ADK base classes")
+    print(f"   [OK] Executed via agent.run_async() with genai.Client")
+    print(f"   [OK] No ADK server deployment required")
+    print(f"   [OK] Real LLM output from Vertex AI Gemini")
 
     # ========================================================================
     # STAGE 7: Performance Evaluation
@@ -239,15 +239,15 @@ async def execute_research_workflow(
 
     # This section will work once you complete TODO 8
     if execution_time and evaluator and performance_summary:
-        print(f"   ✓ Execution Time: {execution_time:.2f}s")
-        print(f"   ✓ Performance Score: {performance_summary['performance_score']:.2f}")
-        print(f"   ✓ Health Status: {performance_summary['health_status']}")
-        print(f"   ✓ Queries Processed: {evaluator.metrics.queries_processed}")
+        print(f"   [OK] Execution Time: {execution_time:.2f}s")
+        print(f"   [OK] Performance Score: {performance_summary['performance_score']:.2f}")
+        print(f"   [OK] Health Status: {performance_summary['health_status']}")
+        print(f"   [OK] Queries Processed: {evaluator.metrics.queries_processed}")
 
         if performance_summary['bottlenecks']:
-            print(f"   ⚠️  Bottlenecks Identified:")
+            print(f"   [!] Bottlenecks Identified:")
             for bottleneck in performance_summary['bottlenecks']:
-                print(f"      • {bottleneck}")
+                print(f"      - {bottleneck}")
 
         workflow_results['stage_7_performance'] = {
             'execution_time': execution_time,
@@ -255,7 +255,7 @@ async def execute_research_workflow(
             'evaluator': evaluator
         }
     else:
-        print(f"   ⚠️  Performance evaluation not implemented (complete TODO 8)")
+        print(f"   [!] Performance evaluation not implemented (complete TODO 8)")
         workflow_results['stage_7_performance'] = None
 
     return workflow_results
@@ -322,10 +322,10 @@ def generate_research_report(workflow_results: Dict[str, Any]) -> str:
 **Coherence Score:** {synthesis.get('coherence_score', 0):.2f}/1.00
 
 ### Verified Claims
-{chr(10).join(f"✓ {claim}" for claim in fact_check.get('verified_claims', [])[:5])}
+{chr(10).join(f"- {claim}" for claim in fact_check.get('verified_claims', [])[:5])}
 
 ### Areas for Further Investigation
-{chr(10).join(f"⚠️  {claim}" for claim in fact_check.get('questionable_claims', [])[:3])}
+{chr(10).join(f"- {claim}" for claim in fact_check.get('questionable_claims', [])[:3])}
 
 ---
 

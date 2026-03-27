@@ -1,11 +1,48 @@
 import json
-from typing import Dict, Any
+import re
+from typing import Dict, Any, Optional
 from google.adk.agents import LlmAgent, LoopAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.tools.exit_loop_tool import exit_loop
 from google import genai
 from google.genai.types import GenerateContentConfig, Content, Part
+
+
+def parse_json_response(text: str) -> Optional[Dict]:
+    """
+    Robustly parse JSON from LLM response, handling various formats.
+    """
+    if not text:
+        return None
+
+    # Try direct parsing first
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Remove markdown code blocks
+    clean_text = text
+    json_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', clean_text)
+    if json_block_match:
+        clean_text = json_block_match.group(1)
+
+    try:
+        return json.loads(clean_text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Find JSON object in the text
+    try:
+        json_start = clean_text.find('{')
+        json_end = clean_text.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            return json.loads(clean_text[json_start:json_end])
+    except json.JSONDecodeError:
+        pass
+
+    return None
 
 
 class ResearcherAgent(LlmAgent):
@@ -42,14 +79,10 @@ CRITICAL FOR ITERATIONS:
 - Strengthen areas where the critic requested more depth or evidence
 - Show clear improvement in each iteration
 
-Output format (JSON):
-{
-  "answer": "Your comprehensive answer here with evidence and reasoning",
-  "key_points": ["point1 with evidence", "point2 with evidence", "point3 with evidence"],
-  "sources_mentioned": ["source1", "source2", "source3"],
-  "confidence": "high/medium/low",
-  "iteration_notes": "What you improved this iteration based on critic feedback (be specific)"
-}
+IMPORTANT: Output ONLY valid JSON, no markdown formatting, no code blocks, no explanation text.
+
+Output this exact JSON structure:
+{"answer": "Your comprehensive answer here", "key_points": ["point1", "point2", "point3"], "sources_mentioned": ["source1", "source2"], "confidence": "high", "iteration_notes": "What you improved"}
 
 Focus on accuracy, clarity, and continuous improvement. Each iteration MUST show measurable progress."""
 
@@ -60,7 +93,7 @@ Focus on accuracy, clarity, and continuous improvement. Each iteration MUST show
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.7,
-                max_output_tokens=1024,
+                max_output_tokens=8192,
                 response_mime_type="application/json"
             )
         )
@@ -107,16 +140,10 @@ TOOL USAGE:
 - If quality_score >= 0.80: Call the exit_loop tool to stop the refinement loop
 - If quality_score < 0.80: Do NOT call exit_loop. The loop will continue for more refinement.
 
-Output your evaluation as JSON first, then decide whether to call exit_loop:
-{
-  "quality": "excellent/good/needs_improvement/poor",
-  "quality_score": 0.65,
-  "feedback": "Specific, actionable feedback for improvement",
-  "strengths": ["strength1", "strength2"],
-  "weaknesses": ["weakness1", "weakness2", "weakness3"],
-  "reasoning": "Detailed explanation of your assessment and what would raise the score",
-  "should_continue": true/false
-}
+IMPORTANT: Output ONLY valid JSON first, no markdown formatting, no code blocks. Then decide whether to call exit_loop.
+
+Output this exact JSON structure:
+{"quality": "needs_improvement", "quality_score": 0.65, "feedback": "Specific feedback", "strengths": ["strength1"], "weaknesses": ["weakness1", "weakness2"], "reasoning": "Explanation", "should_continue": true}
 
 Be constructive but demanding. Research quality matters. Do not inflate scores."""
 
@@ -128,7 +155,7 @@ Be constructive but demanding. Research quality matters. Do not inflate scores."
             tools=[exit_loop],
             generate_content_config=GenerateContentConfig(
                 temperature=0.3,
-                max_output_tokens=768
+                max_output_tokens=8192
             )
         )
 
@@ -257,15 +284,9 @@ async def execute_research_loop(
                 print(f"\n   Iteration {researcher_count}/{max_iterations}")
                 print(f"      -> researcher generating answer...")
 
-                # Parse researcher output (may have markdown code blocks)
-                try:
-                    clean_text = text
-                    if "```json" in clean_text:
-                        clean_text = clean_text.split("```json")[-1]
-                    if "```" in clean_text:
-                        clean_text = clean_text.split("```")[0]
-                    current_answer = json.loads(clean_text.strip())
-                except json.JSONDecodeError:
+                # Parse researcher output using robust helper
+                current_answer = parse_json_response(text)
+                if not current_answer:
                     current_answer = {
                         'answer': text,
                         'key_points': [],
@@ -281,25 +302,9 @@ async def execute_research_loop(
             elif event.author == "critic":
                 print(f"      -> critic evaluating quality...")
 
-                # Parse critic output (may be mixed with tool call or markdown)
-                # Try to extract JSON from the text
-                try:
-                    # Strip markdown code blocks if present
-                    clean_text = text
-                    if "```json" in clean_text:
-                        clean_text = clean_text.split("```json")[-1]
-                    if "```" in clean_text:
-                        clean_text = clean_text.split("```")[0]
-
-                    # Handle case where JSON might be embedded in other text
-                    json_start = clean_text.find('{')
-                    json_end = clean_text.rfind('}') + 1
-                    if json_start >= 0 and json_end > json_start:
-                        json_text = clean_text[json_start:json_end]
-                        current_evaluation = json.loads(json_text)
-                    else:
-                        raise json.JSONDecodeError("No JSON found", clean_text, 0)
-                except json.JSONDecodeError:
+                # Parse critic output using robust helper
+                current_evaluation = parse_json_response(text)
+                if not current_evaluation:
                     current_evaluation = {
                         'quality': 'needs_improvement',
                         'quality_score': 0.5,

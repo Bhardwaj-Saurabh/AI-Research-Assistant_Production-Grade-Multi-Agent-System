@@ -1,8 +1,41 @@
 import json
-from typing import Dict, Any
+import re
+from typing import Dict, Any, Optional
 from google.adk.agents import LlmAgent
 from google import genai
 from google.genai.types import GenerateContentConfig
+
+
+def parse_json_response(text: str) -> Optional[Dict]:
+    """Robustly parse JSON from LLM response."""
+    if not text:
+        return None
+
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Remove markdown code blocks
+    clean_text = text
+    json_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', clean_text)
+    if json_block_match:
+        clean_text = json_block_match.group(1)
+
+    try:
+        return json.loads(clean_text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    try:
+        json_start = clean_text.find('{')
+        json_end = clean_text.rfind('}') + 1
+        if json_start >= 0 and json_end > json_start:
+            return json.loads(clean_text[json_start:json_end])
+    except json.JSONDecodeError:
+        pass
+
+    return None
 
 
 class DomainClassifierAgent(LlmAgent):
@@ -50,7 +83,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.3,
-                max_output_tokens=512,
+                max_output_tokens=2048,
                 response_mime_type="application/json"
             )
         )
@@ -76,23 +109,22 @@ Output format (JSON):
             config=self.generate_content_config
         )
 
-        try:
-            result = json.loads(response.text)
+        result = parse_json_response(response.text)
+        if result:
             result['_metadata'] = {
                 'agent': self.name,
                 'execution': 'direct_genai_client'
             }
             return result
-        except json.JSONDecodeError:
-            return {
-                'domain': 'general',
-                'confidence': 0.5,
-                'complexity': 'medium',
-                'reasoning': 'Classification failed',
-                'recommended_sources': ['web', 'arxiv', 'scholar'],
-                'keywords': [],
-                '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
-            }
+        return {
+            'domain': 'general',
+            'confidence': 0.5,
+            'complexity': 'medium',
+            'reasoning': 'Classification failed',
+            'recommended_sources': ['web', 'arxiv', 'scholar'],
+            'keywords': [],
+            '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
+        }
 
 
 class FactCheckAgent(LlmAgent):
@@ -129,7 +161,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.3,
-                max_output_tokens=1024,
+                max_output_tokens=8192,
                 response_mime_type="application/json"
             )
         )
@@ -162,23 +194,22 @@ Key Points: {json.dumps(answer.get('key_points', []))}
             config=self.generate_content_config
         )
 
-        try:
-            result = json.loads(response.text)
+        result = parse_json_response(response.text)
+        if result:
             result['_metadata'] = {
                 'agent': self.name,
                 'execution': 'direct_genai_client'
             }
             return result
-        except json.JSONDecodeError:
-            return {
-                'verified_claims': [],
-                'questionable_claims': [],
-                'credibility_score': 0.5,
-                'verification_notes': 'Fact-checking failed',
-                'sources_checked': [],
-                'recommendations': [],
-                '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
-            }
+        return {
+            'verified_claims': [],
+            'questionable_claims': [],
+            'credibility_score': 0.5,
+            'verification_notes': 'Fact-checking failed',
+            'sources_checked': [],
+            'recommendations': [],
+            '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
+        }
 
 
 class SynthesisAgent(LlmAgent):
@@ -216,7 +247,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.7,
-                max_output_tokens=2048,
+                max_output_tokens=8192,
                 response_mime_type="application/json"
             )
         )
@@ -255,23 +286,22 @@ Top Sources: {len(sources.get('aggregated_sources', {}).get('top_sources', []))}
             config=self.generate_content_config
         )
 
-        try:
-            result = json.loads(response.text)
+        result = parse_json_response(response.text)
+        if result:
             result['_metadata'] = {
                 'agent': self.name,
                 'execution': 'direct_genai_client'
             }
             return result
-        except json.JSONDecodeError:
-            return {
-                'synthesis': answer.get('answer', 'Synthesis failed'),
-                'key_insights': answer.get('key_points', []),
-                'themes': [],
-                'recommendations': [],
-                'coherence_score': 0.5,
-                'executive_summary': 'Synthesis failed',
-                '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
-            }
+        return {
+            'synthesis': answer.get('answer', 'Synthesis failed'),
+            'key_insights': answer.get('key_points', []),
+            'themes': [],
+            'recommendations': [],
+            'coherence_score': 0.5,
+            'executive_summary': 'Synthesis failed',
+            '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
+        }
 
 
 class CitationAgent(LlmAgent):
@@ -312,7 +342,7 @@ Output format (JSON):
             instruction=instruction,
             generate_content_config=GenerateContentConfig(
                 temperature=0.1,
-                max_output_tokens=1536,
+                max_output_tokens=8192,
                 response_mime_type="application/json"
             )
         )
@@ -341,18 +371,17 @@ user: Generate citations for these sources:
             config=self.generate_content_config
         )
 
-        try:
-            result = json.loads(response.text)
+        result = parse_json_response(response.text)
+        if result:
             result['_metadata'] = {
                 'agent': self.name,
                 'execution': 'direct_genai_client'
             }
             return result
-        except json.JSONDecodeError:
-            return {
-                'citations': [],
-                'bibliography': '',
-                'total_citations': 0,
-                'citation_style': 'APA',
-                '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
-            }
+        return {
+            'citations': [],
+            'bibliography': '',
+            'total_citations': 0,
+            'citation_style': 'APA',
+            '_metadata': {'agent': self.name, 'error': 'json_parse_error'}
+        }
